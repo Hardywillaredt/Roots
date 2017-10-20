@@ -1,5 +1,7 @@
 #pragma once
 #include <iostream>
+#include "json\json.h"
+
 
 
 struct Point3d
@@ -17,6 +19,8 @@ public:
 	double x(); 
 	double y();
 	double z();
+
+	Json::Value toJson();
 
 	friend Point3d operator-(Point3d &first, Point3d &second)
 	{

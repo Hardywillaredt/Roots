@@ -23,6 +23,17 @@ Point3d::Point3d()
 	data[2] = 0;
 }
 
+Json::Value Point3d::toJson()
+{
+	Json::Value edge = Json::Value(Json::ValueType::arrayValue);
+	edge.resize(3);
+
+	edge[0] = data[0];
+	edge[1] = data[1];
+	edge[2] = data[2];
+
+	return edge;
+}
 
 double * Point3d::getData()
 {

@@ -2,58 +2,21 @@
 
 #include "Geometry.h"
 #include "RootAttributes.h"
+#include "SkeletonEdge.h"
 
 #include <vector>
+#include "json\json.h"
 
 
 
 namespace Roots
 {
 
-
-	struct SkeletonEdge
-	{
-	public:
-		size_t v0, v1;
-		RootAttributes attributes;
-		SkeletonEdge();
-		SkeletonEdge(size_t firstVert, size_t secondVert, RootAttributes aAttributes = RootAttributes());
-		SkeletonEdge(size_t firstVert, size_t secondVert, double *aAttributeData);
-
-		friend bool operator<(SkeletonEdge &first, SkeletonEdge &second)
-		{
-			return first.v0 < second.v0 ? true : (second.v0 < first.v0 ? false : (first.v1 < second.v1 ? true : false));
-		}
-
-		//this operator ignores the attribution information for convenience in the edge finding and sorting process
-		friend bool operator==(SkeletonEdge &first, SkeletonEdge &second)
-		{
-			return first.v0 == second.v0 && first.v1 == second.v1;
-		}
-
-		friend bool operator!=(SkeletonEdge &first, SkeletonEdge &second)
-		{
-			return !(first == second);
-		}
-
-		friend std::ostream& operator<<(std::ostream& out, SkeletonEdge &edge)
-		{
-			double *data = edge.attributes.getData();
-			out << "(" << edge.v0 << " " << edge.v1 << ") {";
-			for (int i = 0; i < RootAttributes::NumAttributes - 1; ++i)
-			{
-				
-				out << data[i] << ", ";
-			}
-			out << data[RootAttributes::NumAttributes - 1] << "}";
-			return out;
-		}
-	};
-
-
-
 	typedef std::vector<SkeletonEdge> edgeList;
 	typedef edgeList::iterator edgeIter;
+
+	typedef std::vector<SkeletonEdge*> edgePtrList;
+	typedef edgePtrList::iterator edgePtrIter;
 
 	typedef std::vector<Point3d> vertList;
 	typedef vertList::iterator vertIter;
@@ -64,26 +27,31 @@ namespace Roots
 	{
 	public:
 		Skeleton();
-		Skeleton(vertList aVertices, edgeList aEdges);
-		Skeleton(std::string filename);
-		Skeleton(char * filename);
+		Skeleton(vertList aVertices, std::vector<edgePtrList> aEdges);
+
+		void LoadFromTextFile(char *filename);
+		void LoadFromJson(Json::Value skelJson);
+		void LoadFromJsonFile(char *filename);
+		
 
 		vertList getVertices();
-		edgeList getEdges();
+		std::vector<edgePtrList> getEdges();
 
-		edgeIter FindEdge(size_t v0, size_t v1);
-		edgeIter FindEdge(SkeletonEdge toFind);
-
-		edgeIter FindNextEdge(SkeletonEdge toFind);
 
 		void AddEdge(SkeletonEdge toAdd);
 
+		void RemoveEdges(edgeList toRemove, bool careAboutAttributes = false);
+		void RemoveEdge(SkeletonEdge toRemove, bool careAboutAttributes = false);
+		void RemoveEdge(size_t v0, size_t v1);
 
-		//edgeList ShortestPath(size_t v0, size_t v1);
+		Json::Value toJson();
 
-		//void RemoveEdges(edgeList toRemove);
-		//void RemoveEdge(SkeletonEdge toRemove);
-		//void RemoveEdge(size_t v0, size_t v1);
+		friend std::ostream& operator<<(std::ostream &out, Skeleton &skeleton)
+		{
+
+			out << skeleton.toJson().toStyledString();
+			return out;
+		}
 
 	private:
 
@@ -91,7 +59,19 @@ namespace Roots
 		vertList mVerts;
 
 		//list of edges sorted by the id of the first vertex, then the second
-		edgeList mEdges;
-
+		std::vector<edgePtrList> mEdges;
+		
+	public:
+		std::vector<std::vector<size_t>> mNeighbors;
+		size_t mNumVertices;
+		size_t mNumEdges;
 	};
+
+	/*
+	This function will take a single root (edgePtrList) and order that list of edgePtrs from beginning to end.  If no edge with a degree 1 vertex is provided as
+	the forward end, then the returned edge-list will be ordered by the lower degree 1 vertex id.  Will return the 
+	*/
+	edgePtrList tidyUpRoot(edgePtrList toTidy, bool &valid, size_t &end1, size_t &end2, SkeletonEdge *beginning = nullptr);
+
+	
 }
